@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-09-06
+
 ### Fixed
 
 - `test_switch_under_multiprocess_load_loses_nothing` no longer relies on a fixed

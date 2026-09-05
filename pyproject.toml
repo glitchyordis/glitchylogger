@@ -1,0 +1,74 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "glitchylogger"
+version = "0.1.0"
+description = "Process-safe, thread-safe logger with a hot-swappable log file target"
+readme = "readme.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [{ name = "Felix Kong Jia Xun (glitchyordis)" }]
+keywords = ["logging", "multiprocessing", "threading", "jsonl"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Typing :: Typed",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/glitchyordis/glitchylogger"
+Repository = "https://github.com/glitchyordis/glitchylogger.git"
+Issues = "https://github.com/glitchyordis/glitchylogger/issues"
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
+    "pytest-timeout>=2.3",
+    "httpx>=0.27",
+    "fastapi>=0.110",
+]
+dev = [
+    "build>=1.2",
+    "twine>=5.1",
+    "uvicorn>=0.29",
+    "bump-my-version>=0.20",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.bumpversion]
+current_version = "0.1.0"
+commit = true
+tag = true
+tag_name = "v{new_version}"
+
+[[tool.bumpversion.files]]
+glob = "pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+[[tool.bumpversion.files]]
+glob = "CHANGELOG.md"
+search = "## [Unreleased]"
+replace = "## [Unreleased]\n\n## [{new_version}] - {now:%Y-%m-%d}"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+timeout = 180
+addopts = "-ra"
+markers = [
+    "slow: long-running soak tests",
+    "posix_only: requires a POSIX platform",
+    "fastapi: requires fastapi + httpx",
+]

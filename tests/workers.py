@@ -45,3 +45,15 @@ def log_until(handle, tag: str, count: int, barrier=None) -> None:
         barrier.wait()
     for i in range(count):
         log.info("%s-%d", tag, i)
+
+
+def log_around_switch(handle, tag: str, count: int, barrier) -> None:
+    """Log a batch, park at the barrier while the parent switches, then log another."""
+    configure_worker(handle)
+    log = get_logger(f"worker.{tag}")
+    for i in range(count):
+        log.info("%s-a%d", tag, i)
+    barrier.wait()
+    barrier.wait()
+    for i in range(count):
+        log.info("%s-b%d", tag, i)

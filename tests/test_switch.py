@@ -26,14 +26,21 @@ def test_switch_under_multiprocess_load_loses_nothing(
 ):
     handle = get_logging_handle()
     ctx = multiprocessing.get_context(start_method)
+    barrier = ctx.Barrier(5)
     procs = [
-        ctx.Process(target=workers.log_burst, args=(handle, f"p{i}", PER_PROC))
+        ctx.Process(
+            target=workers.log_around_switch, args=(handle, f"p{i}", PER_PROC, barrier)
+        )
         for i in range(4)
     ]
     for p in procs:
         p.start()
-    time.sleep(0.15)
+
+    barrier.wait(60)  # every child has enqueued its first batch
+    assert flush_logs(timeout=30)
     assert set_log_file(alt_file)
+    barrier.wait(60)  # release the second batch into the new target
+
     for p in procs:
         p.join(60)
         assert p.exitcode == 0
@@ -41,9 +48,9 @@ def test_switch_under_multiprocess_load_loses_nothing(
 
     old = messages(log_file)
     new = messages(alt_file)
-    assert len(old) + len(new) == 4 * PER_PROC
-    assert len(set(old) | set(new)) == 4 * PER_PROC
-    assert new, "the switch happened too late to be meaningful"
+    assert len(old) == 4 * PER_PROC
+    assert len(new) == 4 * PER_PROC
+    assert len(set(old) | set(new)) == 8 * PER_PROC
 
 
 def test_breadcrumbs_are_first_and_last_lines_under_load(

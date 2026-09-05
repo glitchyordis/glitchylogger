@@ -79,12 +79,22 @@ Uvicorn's `--workers N` processes are created outside the application, so they
 cannot share this in-process queue. Use one Uvicorn worker, or assign each worker
 its own log file.
 
+### Forking on POSIX
+
+`configure_logging()` starts a listener thread and a `multiprocessing.Manager`
+process, so the configuring process is multi-threaded from then on. Python 3.12
+and newer raise a `DeprecationWarning` when such a process calls `fork()`, and
+because `capture_warnings` is on by default that warning is written to the log
+file like any other record. Prefer the `spawn` or `forkserver` start method, fork
+your workers before configuring logging, or set `capture_warnings=False` if the
+noise is unwanted.
+
 ## Development and releases
 
 Development dependencies are defined in `pyproject.toml`; there is no separate
 requirements file. The `test` extra installs the test suite dependencies, while
-`dev` adds the build, publishing, and example-server tools. Install both for a
-complete contributor environment:
+`dev` adds the build, publishing, release, and example-server tools. Install both
+for a complete contributor environment:
 
 ```bash
 python -m pip install --editable ".[test,dev]"
@@ -93,12 +103,18 @@ python -m build
 python -m twine check dist/*
 ```
 
-Create immutable releases so consuming repositories can upgrade deliberately:
+Work on a branch and record every user-visible change under `## [Unreleased]` in
+`CHANGELOG.md`, in the same commit as the code. Release from `main` once the
+changes are merged:
 
 ```bash
-git tag v0.1.0
-git push origin main v0.1.0
+bump-my-version bump patch      # or minor / major / --new-version X.Y.Z
+git push --follow-tags
 ```
+
+That single command rewrites the version in `pyproject.toml`, promotes the
+`Unreleased` section of `CHANGELOG.md` to the new version, commits, and creates
+the matching `vX.Y.Z` tag. Add `--dry-run --verbose` to preview it first.
 
 The package can also be uploaded to PyPI from the generated files in `dist/`.
 

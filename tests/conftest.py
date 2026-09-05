@@ -41,8 +41,16 @@ def alt_file(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def logging_setup(log_file: Path):
-    """Configured pipeline with the console muted so pytest output stays readable."""
-    handle = configure_logging(LoggerConfig(file_path=log_file, level="DEBUG", console=False))
+    """Configured pipeline with the console muted so pytest output stays readable.
+
+    Warning capture is off so interpreter warnings (e.g. CPython's fork-in-a-
+    multi-threaded-process DeprecationWarning) cannot land in the counted log.
+    """
+    handle = configure_logging(
+        LoggerConfig(
+            file_path=log_file, level="DEBUG", console=False, capture_warnings=False
+        )
+    )
     return handle
 
 

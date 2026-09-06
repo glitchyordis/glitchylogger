@@ -10,14 +10,11 @@
   <header class="topbar">
     <div class="brand">
       <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
-      <div>
-        <h1>Log Viewer</h1>
-        <p id="connectionText" role="status">Waiting for access token</p>
-      </div>
+      <h1>Log Viewer</h1>
     </div>
     <div class="status-wrap">
       <span id="connectionDot" class="status-dot offline" aria-hidden="true"></span>
-      <span class="status-label">Live</span>
+      <span id="connectionText" class="connection-status" role="status">Waiting for access token</span>
       <span id="recordCount" class="record-count">0 records</span>
     </div>
   </header>

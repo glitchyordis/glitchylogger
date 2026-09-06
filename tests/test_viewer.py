@@ -190,6 +190,9 @@ def test_viewer_page_and_assets_are_served(tmp_path: Path):
 
     assert page.status_code == 200
     assert "GlitchyLogger Viewer" in page.text
+    assert '<span id="connectionDot"' in page.text
+    assert '<span id="connectionText" class="connection-status"' in page.text
+    assert '<span class="status-label">Live</span>' not in page.text
     assert script.status_code == 200
     assert "Authorization" in script.text
 

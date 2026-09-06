@@ -55,11 +55,10 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 .brand-mark span:nth-child(3), .dialog-mark span:nth-child(3) { height: 16px; }
 .brand-mark span:nth-child(4), .dialog-mark span:nth-child(4) { height: 26px; }
 .brand h1 { margin: 0; font-size: 17px; font-weight: 650; letter-spacing: 0; }
-.brand p { margin: 1px 0 0; color: #bfc2c5; font-size: 11px; }
 .status-wrap { gap: 7px; min-width: 0; color: #d9dbdd; font-size: 12px; }
 .status-dot { width: 8px; height: 8px; flex: 0 0 auto; border-radius: 50%; background: #35b77e; box-shadow: 0 0 0 3px rgb(53 183 126 / 14%); }
 .status-dot.offline { background: #ec4960; box-shadow: 0 0 0 3px rgb(236 73 96 / 14%); }
-.status-label { font-weight: 650; }
+.connection-status { overflow: hidden; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
 .record-count { margin-left: 8px; padding-left: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-left: 1px solid #484b4f; color: #aeb1b5; }
 
 main { height: calc(100vh - 64px); padding: 14px 18px 18px; display: flex; flex-direction: column; gap: 10px; }
@@ -306,7 +305,8 @@ dialog .directory-choice:hover { border-color: transparent; background: #eceef0;
 @media (max-width: 650px) {
   .topbar { height: 58px; padding-inline: 14px; }
   .brand-mark { display: none; }
-  .status-label, .record-count { display: none; }
+  .connection-status { max-width: 48vw; }
+  .record-count { display: none; }
   main { height: calc(100vh - 58px); padding: 8px; }
   .source-controls { align-items: stretch; flex-direction: column; }
   .source-field, .logger-field { width: 100%; }

@@ -7,6 +7,13 @@ GlitchyLogger uses one listener thread and one file handle. Threads and child
 processes send records through a shared queue, avoiding competing writes to the
 same file.
 
+An optional authenticated [browser log viewer](docs/log-viewer.md) provides
+live JSONL updates, filtering, source selection, and an admin session dashboard.
+
+<p align="center">
+	<img src="docs/images/log-viewer.png" alt="GlitchyLogger browser viewer showing live JSONL records" width="780">
+</p>
+
 ## Requirements
 
 - Python 3.11 or newer

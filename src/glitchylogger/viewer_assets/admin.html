@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GlitchyLogger Admin</title>
+  <link rel="stylesheet" href="/assets/viewer.css">
+  <link rel="stylesheet" href="/assets/admin.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+      <div>
+        <h1>Viewer Sessions</h1>
+        <p id="adminStatus" role="status">Waiting for admin token</p>
+      </div>
+    </div>
+    <div class="status-wrap">
+      <span id="adminDot" class="status-dot offline" aria-hidden="true"></span>
+      <span class="status-label">Admin</span>
+      <span id="sessionCount" class="record-count">0 connected</span>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    <section class="admin-toolbar" aria-label="Session controls">
+      <div>
+        <strong>Active viewer connections</strong>
+        <span>Updated automatically</span>
+      </div>
+      <div class="admin-actions">
+        <button id="refreshButton" type="button">Refresh</button>
+        <button id="disconnectAllButton" class="disconnect-button" type="button" disabled>Disconnect all</button>
+      </div>
+    </section>
+
+    <section class="session-panel" aria-label="Active viewer sessions">
+      <div class="session-table" role="table" aria-label="Active viewer sessions">
+        <div class="session-head" role="row">
+          <span role="columnheader">Client</span>
+          <span role="columnheader">Source</span>
+          <span role="columnheader">Connected</span>
+          <span role="columnheader">Idle</span>
+          <span role="columnheader">Started</span>
+          <span role="columnheader">Action</span>
+        </div>
+        <div id="sessionRows" class="session-rows" role="rowgroup"></div>
+      </div>
+      <div id="emptySessions" class="empty-state">No viewers connected.</div>
+    </section>
+  </main>
+
+  <dialog id="adminTokenDialog">
+    <form id="adminTokenForm" method="dialog">
+      <div class="dialog-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+      <h2>Admin access</h2>
+      <p>Enter the admin token for this logging host.</p>
+      <label><span>Admin token</span><input id="adminTokenInput" type="password" required autocomplete="current-password"></label>
+      <p id="adminTokenError" class="error" role="alert"></p>
+      <button type="submit">Connect</button>
+    </form>
+  </dialog>
+
+  <script src="/assets/admin.js" defer></script>
+</body>
+</html>

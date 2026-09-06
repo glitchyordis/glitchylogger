@@ -45,9 +45,11 @@ def worker(tag: str, count: int) -> str:
 
 
 def main() -> None:
+    # use datetime to set logname
+    from datetime import datetime
     configure_logging(
         LoggerConfig(
-            file_path=LOG_DIR / "logA.log", level="DEBUG", allowed_root=LOG_DIR
+            file_path=LOG_DIR / f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.log", level="DEBUG", allowed_root=LOG_DIR
         )
     )
     log = get_logger("demo.main")

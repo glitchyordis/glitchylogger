@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+### Added
+
+- Optional authenticated browser viewer for searching and following the latest
+  JSON Lines records without changing the logging format or runtime pipeline;
+  directory mode can automatically follow the newest log or select a specific file.
+- Authenticated server-side directory browsing and runtime directory switching
+  in the browser viewer.
+- Independent per-browser directory and file selection with concurrent live
+  updates for users following the same or different log files.
+- Separate-token admin dashboard for connection duration, interaction-idle
+  time, client/source details, and individual or bulk viewer disconnection.
+- Progressive browser rendering loads older retained rows in 250-row batches
+  while scrolling upward and reports when older records remain on disk beyond
+  the 1,000-record searchable window.
+
 ## [0.1.1] - 2026-09-06
 
 ### Fixed

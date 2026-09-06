@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import getpass
 import json
 from pathlib import Path
 
@@ -9,8 +10,11 @@ import pytest
 from glitchylogger.viewer import (
     JsonlFollower,
     LogSourceCatalog,
+    _resolve_secret,
+    _store_credentials,
     _stream_events,
     _tail_records,
+    store_credentials,
     tail_records,
 )
 
@@ -718,3 +722,115 @@ def test_create_app_rejects_nonpositive_tail(tmp_path: Path):
 
     with pytest.raises(ValueError, match="tail"):
         create_app(tmp_path / "app.jsonl", "secret", tail=0)
+
+
+def test_resolve_secret_prefers_explicit_value(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("TEST_VIEWER_TOKEN", "environment-secret")
+
+    value = _resolve_secret(
+        "explicit-secret",
+        "TEST_VIEWER_TOKEN",
+        "viewer-token",
+        lambda *_: pytest.fail("credential store should not be read"),
+    )
+
+    assert value == "explicit-secret"
+
+
+def test_resolve_secret_prefers_environment_over_credential_store(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.setenv("TEST_VIEWER_TOKEN", "environment-secret")
+
+    value = _resolve_secret(
+        None,
+        "TEST_VIEWER_TOKEN",
+        "viewer-token",
+        lambda *_: pytest.fail("credential store should not be read"),
+    )
+
+    assert value == "environment-secret"
+
+
+def test_resolve_secret_uses_system_credential_store(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.delenv("TEST_VIEWER_TOKEN", raising=False)
+    calls: list[tuple[str, str]] = []
+
+    def read_credential(service: str, name: str) -> str:
+        calls.append((service, name))
+        return "stored-secret"
+
+    value = _resolve_secret(
+        None, "TEST_VIEWER_TOKEN", "viewer-token", read_credential
+    )
+
+    assert value == "stored-secret"
+    assert calls == [("glitchylogger", "viewer-token")]
+
+
+def test_resolve_secret_returns_none_when_no_credential(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.delenv("TEST_VIEWER_TOKEN", raising=False)
+
+    value = _resolve_secret(None, "TEST_VIEWER_TOKEN", "viewer-token", lambda *_: None)
+
+    assert value is None
+
+
+def test_resolve_secret_sanitizes_credential_store_failure(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.delenv("TEST_VIEWER_TOKEN", raising=False)
+
+    def fail_read(*_: str) -> str:
+        raise OSError("backend details")
+
+    with pytest.raises(RuntimeError, match="could not read viewer-token") as error:
+        _resolve_secret(None, "TEST_VIEWER_TOKEN", "viewer-token", fail_read)
+
+    assert "backend details" not in str(error.value)
+
+
+def test_store_credentials_writes_distinct_tokens():
+    answers = iter(["viewer-secret", "admin-secret"])
+    writes: list[tuple[str, str, str]] = []
+
+    _store_credentials(lambda _: next(answers), lambda *args: writes.append(args))
+
+    assert writes == [
+        ("glitchylogger", "viewer-token", "viewer-secret"),
+        ("glitchylogger", "admin-token", "admin-secret"),
+    ]
+
+
+@pytest.mark.parametrize("answers", [("", "admin-secret"), ("same", "same")])
+def test_store_credentials_rejects_invalid_tokens(answers: tuple[str, str]):
+    values = iter(answers)
+
+    with pytest.raises(ValueError):
+        _store_credentials(
+            lambda _: next(values),
+            lambda *_: pytest.fail("invalid credentials must not be stored"),
+        )
+
+
+def test_store_credentials_does_not_expose_token_on_backend_failure(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    keyring = pytest.importorskip("keyring")
+    answers = iter(["viewer-secret", "admin-secret"])
+    monkeypatch.setattr(getpass, "getpass", lambda _: next(answers))
+
+    def fail_write(*_: str) -> None:
+        raise OSError("backend rejected viewer-secret")
+
+    monkeypatch.setattr(keyring, "set_password", fail_write)
+
+    with pytest.raises(SystemExit) as error:
+        store_credentials()
+
+    assert "viewer-secret" not in str(error.value)
+    assert "system store" in str(error.value)

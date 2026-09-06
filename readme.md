@@ -90,16 +90,34 @@ Install the viewer dependencies on the computer running the application:
 python -m pip install --editable ".[viewer]"
 ```
 
-Set a token and start the viewer on the log directory. Binding to `0.0.0.0`
-makes it reachable from other computers on the LAN:
+On Windows, securely prompt for the viewer and admin tokens once. They are
+stored in Windows Credential Manager for the current Windows account:
 
 ```powershell
-$env:GLITCHYLOGGER_VIEWER_TOKEN = "replace-with-a-long-random-token"
-$env:GLITCHYLOGGER_ADMIN_TOKEN = "replace-with-a-different-admin-token"
+glitchylogger-store-viewer-secrets
+```
+
+Enter the shared viewer password at `Viewer token:` and a different privileged
+password at `Admin token:`. Input is hidden. If the setup command is not
+recognized after updating the source, reinstall the editable package with the
+viewer extra using the command above, or run:
+
+```powershell
+python -c "from glitchylogger.viewer import store_credentials; store_credentials()"
+```
+
+Then start the viewer on the log directory. Binding to `0.0.0.0` makes it
+reachable from other computers on the LAN:
+
+```powershell
 glitchylogger-viewer --directory C:\ProgramData\MyApp\logs --host 0.0.0.0
 ```
 
-On the other computer, open `http://LOGGER-PC:8765` and enter the same token.
+Environment variables override stored credentials, and explicit token options
+override both. On the other computer, open `http://LOGGER-PC:8765` and enter
+the same viewer token; administrators still enter the separate admin token at
+`http://LOGGER-PC:8765/admin`. The tokens are shared role credentials rather
+than individual user accounts.
 By default, the viewer loads up to the latest 1,000 complete records and then
 displays new records as they are appended. It renders the newest 250 matches
 first; scroll upward to load older retained rows in batches of 250. The counter
@@ -126,6 +144,11 @@ durations, client/source details, and a control to disconnect an individual
 viewer stream or all active streams. The viewer and admin tokens must not match.
 Bulk disconnect stops live updates but does not revoke the shared viewer token;
 users who retain it can reload and reconnect.
+
+Running the setup command again replaces both stored tokens. Stop every old
+viewer process and restart the server afterward because each running process
+keeps the tokens it loaded at startup. Launch without `--token` or
+`--admin-token` when you intend to use the stored values.
 
 Run `python -m pytest tests/test_viewer.py -q` to validate viewer tailing,
 reconnects, concurrent streams, authentication, activity tracking, and admin

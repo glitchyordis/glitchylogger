@@ -31,6 +31,54 @@ If the command is not on `PATH`, use the module form instead:
 python -m glitchylogger.viewer --help
 ```
 
+## Store Tokens on Windows
+
+Run the setup command once under the same Windows account that will launch the
+viewer:
+
+```powershell
+glitchylogger-store-viewer-secrets
+```
+
+It prompts without echoing and stores two entries in Windows Credential
+Manager under the `glitchylogger` service: `viewer-token` and `admin-token`.
+The values must be nonempty and different. Running the command again replaces
+both values.
+
+At the prompts, enter the credentials according to their roles:
+
+```text
+Viewer token:  shared password accepted by the main viewer
+Admin token:   different privileged password accepted by the admin dashboard
+```
+
+If the command is not on `PATH`, use:
+
+```powershell
+python -c "from glitchylogger.viewer import store_credentials; store_credentials()"
+```
+
+Stored credentials belong to the current Windows account. If Task Scheduler,
+a Windows service, or another account launches the viewer, store the entries
+while running as that account or supply environment variables to that process.
+
+The server resolves each token in this order:
+
+1. Explicit `--token` or `--admin-token` option.
+2. `GLITCHYLOGGER_VIEWER_TOKEN` or `GLITCHYLOGGER_ADMIN_TOKEN` environment
+  variable.
+3. The corresponding system credential-store entry.
+
+To remove both stored entries without displaying their values:
+
+```powershell
+python -c "import keyring; keyring.delete_password('glitchylogger', 'viewer-token'); keyring.delete_password('glitchylogger', 'admin-token')"
+```
+
+Credential Manager only supplies secrets when the server starts. Browser users
+still enter the viewer token on `/`, while administrators enter the distinct
+admin token on `/admin`.
+
 ## Choose a Source Mode
 
 The viewer requires either `--directory` or `--file`. They cannot be used
@@ -42,8 +90,6 @@ Directory mode is recommended when the application switches between log files.
 It discovers direct child files ending in `.log` or `.jsonl`.
 
 ```powershell
-$env:GLITCHYLOGGER_VIEWER_TOKEN = "replace-with-a-long-random-token"
-$env:GLITCHYLOGGER_ADMIN_TOKEN = "replace-with-a-different-admin-token"
 glitchylogger-viewer --directory "C:\ProgramData\MyApp\logs"
 ```
 
@@ -86,8 +132,6 @@ glitchylogger-viewer --directory "examples\demo-logs"
 Use single-file mode when the application always writes to one stable path:
 
 ```powershell
-$env:GLITCHYLOGGER_VIEWER_TOKEN = "replace-with-a-long-random-token"
-$env:GLITCHYLOGGER_ADMIN_TOKEN = "replace-with-a-different-admin-token"
 glitchylogger-viewer --file "C:\ProgramData\MyApp\logs\app.jsonl"
 ```
 
@@ -102,8 +146,8 @@ computer:
 http://127.0.0.1:8765
 ```
 
-Enter the same token used to launch the viewer. The browser keeps the token in
-session storage, which is cleared when that browser session ends.
+Enter the viewer token stored at the `Viewer token:` prompt. The browser keeps
+the token in session storage, which is cleared when that browser session ends.
 
 Stop the viewer with `Ctrl+C` in its terminal.
 
@@ -112,8 +156,6 @@ Stop the viewer with `Ctrl+C` in its terminal.
 Bind the viewer to all network interfaces on the logging computer:
 
 ```powershell
-$env:GLITCHYLOGGER_VIEWER_TOKEN = "replace-with-a-long-random-token"
-$env:GLITCHYLOGGER_ADMIN_TOKEN = "replace-with-a-different-admin-token"
 glitchylogger-viewer `
   --directory "C:\ProgramData\MyApp\logs" `
   --host 0.0.0.0 `
@@ -149,10 +191,10 @@ Open the admin dashboard on the same host and port:
 http://LOGGER-PC:8765/admin
 ```
 
-Enter `GLITCHYLOGGER_ADMIN_TOKEN`, not the viewer token. The tokens must be
-different. The dashboard refreshes every two seconds and shows each active
-connection's client address, browser user agent, selected source, connection
-duration, idle duration, and start time.
+Enter the password stored at the `Admin token:` prompt, not the viewer token.
+The tokens must be different. The dashboard refreshes every two seconds and
+shows each active connection's client address, browser user agent, selected
+source, connection duration, idle duration, and start time.
 
 Idle time measures browser interaction, including pointer, keyboard, wheel,
 and touch input. Reports are throttled to once every five seconds, and incoming
@@ -172,9 +214,10 @@ user clears, reloads, or closes it.
 
 Disconnecting all viewers does not revoke the viewer token or prevent later
 connections. A user who still has the viewer token can reload and reconnect.
-Rotate `GLITCHYLOGGER_VIEWER_TOKEN` and restart the server when access must be
-revoked for everyone. Per-user revocation requires separate user credentials,
-which this shared-token viewer does not provide.
+Run `glitchylogger-store-viewer-secrets` again and restart the server when
+access must be revoked for everyone. This replaces both role tokens. Per-user
+revocation requires separate user credentials, which this shared-token viewer
+does not provide.
 
 The bulk endpoint is also available to administrative tooling:
 
@@ -260,8 +303,9 @@ modify the source file.
 --admin-token TOKEN  Separate admin dashboard token
 ```
 
-Prefer environment variables over command-line tokens so credentials are not
-exposed in command history or process listings:
+Prefer the system credential store described above. Environment variables
+override stored credentials; command-line values override both but may be
+visible in command history or process listings:
 
 ```powershell
 $env:GLITCHYLOGGER_VIEWER_TOKEN = "replace-with-a-long-random-token"
@@ -310,6 +354,20 @@ packaged browser assets. The full repository suite is available with
 Install the viewer extra in the active Python environment, or launch it with
 `python -m glitchylogger.viewer`.
 
+If `glitchylogger-store-viewer-secrets` specifically is not recognized after
+updating the source, reinstall the editable package so its new console script
+is generated:
+
+```powershell
+python -m pip install --editable ".[viewer]"
+```
+
+The direct equivalent is:
+
+```powershell
+python -c "from glitchylogger.viewer import store_credentials; store_credentials()"
+```
+
 ### The page does not open remotely
 
 Confirm that the viewer was launched with `--host 0.0.0.0`, that the process is
@@ -318,8 +376,15 @@ computer's Private-network firewall.
 
 ### The token is rejected
 
-The token is case-sensitive. Restart the viewer after changing
-`GLITCHYLOGGER_VIEWER_TOKEN`, then enter the new value in the browser.
+Tokens are case-sensitive. Use the viewer token on `/` and the different admin
+token on `/admin`. Explicit `--token` and `--admin-token` arguments override
+environment variables, which in turn override Credential Manager.
+
+After running `glitchylogger-store-viewer-secrets` again, stop all older viewer
+processes and start a new one without explicit token arguments. Each running
+process retains the credentials it loaded at startup. Also confirm that another
+viewer is not already listening on the same host and port; otherwise the browser
+may still reach the older process.
 
 ### No log files appear
 

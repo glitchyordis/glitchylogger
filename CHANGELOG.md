@@ -16,6 +16,8 @@
 - Progressive browser rendering loads older retained rows in 250-row batches
   while scrolling upward and reports when older records remain on disk beyond
   the 1,000-record searchable window.
+- Windows Credential Manager storage and launch-time fallback for viewer and
+  admin tokens, with environment and explicit command-line overrides.
 
 ## [0.1.1] - 2026-09-06
 

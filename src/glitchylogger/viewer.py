@@ -19,6 +19,69 @@ except ImportError:
     Request = Any  # type: ignore[misc,assignment]
 
 _LOG_SUFFIXES = {".jsonl", ".log"}
+_CREDENTIAL_SERVICE = "glitchylogger"
+_VIEWER_CREDENTIAL = "viewer-token"
+_ADMIN_CREDENTIAL = "admin-token"
+
+
+def _resolve_secret(
+    explicit: str | None,
+    env_name: str,
+    credential_name: str,
+    credential_reader: Callable[[str, str], str | None] | None = None,
+) -> str | None:
+    if explicit:
+        return explicit
+    environment_value = os.environ.get(env_name)
+    if environment_value:
+        return environment_value
+    if credential_reader is None:
+        try:
+            import keyring
+        except ImportError as exc:
+            raise RuntimeError(
+                'Install viewer dependencies with: pip install "glitchylogger[viewer]"'
+            ) from exc
+        credential_reader = keyring.get_password
+    try:
+        return credential_reader(_CREDENTIAL_SERVICE, credential_name)
+    except Exception as exc:
+        raise RuntimeError(
+            f"could not read {credential_name} from the system credential store"
+        ) from exc
+
+
+def _store_credentials(
+    password_reader: Callable[[str], str],
+    credential_writer: Callable[[str, str, str], None],
+) -> None:
+    viewer_token = password_reader("Viewer token: ")
+    admin_token = password_reader("Admin token: ")
+    if not viewer_token or not admin_token:
+        raise ValueError("viewer and admin tokens must not be empty")
+    if hmac.compare_digest(viewer_token, admin_token):
+        raise ValueError("admin token must differ from viewer token")
+    credential_writer(_CREDENTIAL_SERVICE, _VIEWER_CREDENTIAL, viewer_token)
+    credential_writer(_CREDENTIAL_SERVICE, _ADMIN_CREDENTIAL, admin_token)
+
+
+def store_credentials() -> None:
+    """Prompt for and save viewer credentials in the operating-system vault."""
+    from getpass import getpass
+
+    try:
+        import keyring
+    except ImportError as exc:
+        raise SystemExit(
+            'Install viewer dependencies with: pip install "glitchylogger[viewer]"'
+        ) from exc
+    try:
+        _store_credentials(getpass, keyring.set_password)
+    except ValueError as exc:
+        raise SystemExit(f"Could not store viewer credentials: {exc}") from exc
+    except Exception as exc:
+        raise SystemExit("Could not store viewer credentials in the system store.") from exc
+    print("Viewer and admin tokens stored in the system credential store.")
 
 
 def _decode_record(raw: bytes) -> dict[str, Any]:
@@ -591,21 +654,38 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--host", default="127.0.0.1", help="bind address")
     parser.add_argument("--port", default=8765, type=int, help="bind port")
     parser.add_argument("--tail", default=1_000, type=int, help="initial record count")
-    parser.add_argument("--token", default=os.environ.get("GLITCHYLOGGER_VIEWER_TOKEN"))
+    parser.add_argument("--token", help="viewer token (prefer environment or credential store)")
     parser.add_argument(
         "--admin-token",
-        default=os.environ.get("GLITCHYLOGGER_ADMIN_TOKEN"),
-        help="separate token for the admin session dashboard",
+        help="admin token (prefer environment or credential store)",
     )
     return parser
 
 
 def main() -> None:
-    args = _parser().parse_args()
-    if not args.token:
-        _parser().error("set --token or GLITCHYLOGGER_VIEWER_TOKEN")
-    if not args.admin_token:
-        _parser().error("set --admin-token or GLITCHYLOGGER_ADMIN_TOKEN")
+    parser = _parser()
+    args = parser.parse_args()
+    try:
+        viewer_token = _resolve_secret(
+            args.token,
+            "GLITCHYLOGGER_VIEWER_TOKEN",
+            _VIEWER_CREDENTIAL,
+        )
+        admin_token = _resolve_secret(
+            args.admin_token,
+            "GLITCHYLOGGER_ADMIN_TOKEN",
+            _ADMIN_CREDENTIAL,
+        )
+    except RuntimeError as exc:
+        parser.error(str(exc))
+    if not viewer_token:
+        parser.error(
+            "set --token, GLITCHYLOGGER_VIEWER_TOKEN, or store the viewer token"
+        )
+    if not admin_token:
+        parser.error(
+            "set --admin-token, GLITCHYLOGGER_ADMIN_TOKEN, or store the admin token"
+        )
     try:
         import uvicorn
     except ImportError as exc:
@@ -613,10 +693,10 @@ def main() -> None:
     uvicorn.run(
         create_app(
             args.file,
-            args.token,
+            viewer_token,
             args.tail,
             directory=args.directory,
-            admin_token=args.admin_token,
+            admin_token=admin_token,
         ),
         host=args.host,
         port=args.port,

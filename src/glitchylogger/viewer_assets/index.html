@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GlitchyLogger Viewer</title>
+  <link rel="stylesheet" href="/assets/viewer.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+      <h1>Log Viewer</h1>
+    </div>
+    <div class="status-wrap">
+      <span id="connectionDot" class="status-dot offline" aria-hidden="true"></span>
+      <span id="connectionText" class="connection-status" role="status">Waiting for access token</span>
+      <span id="recordCount" class="record-count">0 records</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="controls" aria-label="Log controls">
+      <div class="source-controls">
+        <label class="field-group source-field">
+          <span>Log source</span>
+          <span class="source-picker">
+            <span class="source-search">
+              <span class="search-icon" aria-hidden="true"></span>
+              <input id="fileSearch" type="search" role="combobox" aria-label="Select log source" aria-autocomplete="list" aria-controls="fileSuggestions" aria-expanded="false" placeholder="Search or select a log file" autocomplete="off">
+              <ul id="fileSuggestions" class="file-suggestions" role="listbox" aria-label="Matching log files" hidden></ul>
+            </span>
+            <button id="directoryButton" class="icon-button" type="button" aria-label="Change log directory" title="Change log directory" disabled>
+              <span class="folder-icon" aria-hidden="true"></span>
+            </button>
+          </span>
+        </label>
+        <label class="field-group logger-field">
+          <span>Logger</span>
+          <span class="logger-search">
+            <span class="search-icon" aria-hidden="true"></span>
+            <input id="loggerFilter" type="search" role="combobox" aria-label="Filter by logger" aria-autocomplete="list" aria-controls="loggerSuggestions" aria-expanded="false" placeholder="Search or select a logger" autocomplete="off">
+            <ul id="loggerSuggestions" class="filter-suggestions" role="listbox" aria-label="Matching loggers" hidden></ul>
+          </span>
+        </label>
+      </div>
+      <div class="query-controls">
+        <label class="search-field">
+          <span class="search-icon" aria-hidden="true"></span>
+          <span class="sr-only">Search all log fields</span>
+          <input id="searchInput" type="search" placeholder="Search messages, IDs, and fields" autocomplete="off">
+        </label>
+        <div id="levelFilters" class="level-filters" aria-label="Filter by level"></div>
+        <div class="control-actions">
+          <button id="pauseButton" class="command-button" type="button">Pause</button>
+          <label class="toggle"><input id="autoScroll" type="checkbox" checked><span>Follow</span></label>
+          <button id="clearButton" class="command-button secondary" type="button">Clear</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="log-panel" aria-label="Live logs">
+      <div class="log-head" aria-hidden="true">
+        <span>Index</span><span>Time</span><span>Level</span><span>Logger</span><span>Message</span>
+      </div>
+      <div id="logRows" class="log-rows" role="log" aria-live="off"></div>
+      <div id="emptyState" class="empty-state">Connect to begin viewing logs.</div>
+    </section>
+  </main>
+
+  <dialog id="tokenDialog">
+    <form id="tokenForm" method="dialog">
+      <div class="dialog-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+      <h2>Connect to logs</h2>
+      <p>Enter the access token for this logging host.</p>
+      <label><span>Access token</span><input id="tokenInput" type="password" required autocomplete="current-password"></label>
+      <p id="tokenError" class="error" role="alert"></p>
+      <button type="submit">Connect</button>
+    </form>
+  </dialog>
+
+  <dialog id="directoryDialog" class="directory-dialog">
+    <form id="directoryForm">
+      <h2>Change log directory</h2>
+      <p>Select a folder on the logging server or enter its path.</p>
+      <label><span>Server directory</span><input id="directoryInput" type="text" required autocomplete="off"></label>
+      <div class="directory-browser">
+        <div class="directory-browser-head">
+          <button id="directoryUp" class="secondary compact" type="button">Up</button>
+          <span id="directoryBrowseStatus">Folders</span>
+        </div>
+        <ul id="directoryChoices" aria-label="Server directories"></ul>
+      </div>
+      <p id="directoryError" class="error" role="alert"></p>
+      <div class="dialog-actions">
+        <button id="directoryCancel" class="secondary" type="button">Cancel</button>
+        <button type="submit">Use directory</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/assets/viewer.js" defer></script>
+</body>
+</html>

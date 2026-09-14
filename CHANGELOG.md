@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-14 22:25:15
+
 ### Added
 
 - Viewer column preferences for optionally displaying JSONL `module` and `func`

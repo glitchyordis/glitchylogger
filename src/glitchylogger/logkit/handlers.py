@@ -33,9 +33,15 @@ class SwitchableFileHandler(logging.Handler):
     open in more than one process and the swap needs no cross-process locking.
     """
 
-    def __init__(self, path: Path, mode: str = "a", level: int = logging.NOTSET) -> None:
+    def __init__(
+        self,
+        path: Path,
+        mode: str = "a",
+        level: int = logging.NOTSET,
+        source_path_base: Path | None = None,
+    ) -> None:
         super().__init__(level)
-        self.setFormatter(JsonLinesFormatter())
+        self.setFormatter(JsonLinesFormatter(source_path_base=source_path_base))
         self._swap_lock = threading.RLock()
         self._path = Path(path)
         self._stream = self._open(self._path, mode)

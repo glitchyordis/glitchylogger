@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import sys
+from pathlib import Path
 from typing import IO, Any
 
 _RESERVED = {
@@ -41,6 +42,15 @@ def _extras(record: logging.LogRecord) -> dict[str, Any]:
     }
 
 
+def _source_path(pathname: str, base: Path | None) -> str:
+    if base is None:
+        return pathname
+    try:
+        return str(Path(pathname).resolve().relative_to(base))
+    except ValueError:
+        return pathname
+
+
 def supports_color(stream: IO[str] | None) -> bool:
     if os.environ.get("NO_COLOR") is not None:
         return False
@@ -63,6 +73,12 @@ def supports_color(stream: IO[str] | None) -> bool:
 class JsonLinesFormatter(logging.Formatter):
     """One compact JSON object per line."""
 
+    def __init__(self, source_path_base: Path | None = None) -> None:
+        super().__init__()
+        self.source_path_base = (
+            None if source_path_base is None else Path(source_path_base).expanduser().resolve()
+        )
+
     def format(self, record: logging.LogRecord) -> str:
         payload: dict[str, Any] = {
             "ts": _iso(record.created),
@@ -73,6 +89,7 @@ class JsonLinesFormatter(logging.Formatter):
             "process": record.processName,
             "thread": record.threadName,
             "module": record.module,
+            "pathname": _source_path(record.pathname, self.source_path_base),
             "func": record.funcName,
             "line": record.lineno,
         }
@@ -89,9 +106,12 @@ class JsonLinesFormatter(logging.Formatter):
 class HumanFormatter(logging.Formatter):
     """Aligned, optionally coloured console output."""
 
-    def __init__(self, color: bool = False) -> None:
+    def __init__(self, color: bool = False, source_path_base: Path | None = None) -> None:
         super().__init__()
         self.color = color
+        self.source_path_base = (
+            None if source_path_base is None else Path(source_path_base).expanduser().resolve()
+        )
 
     def format(self, record: logging.LogRecord) -> str:
         extras = _extras(record)
@@ -104,11 +124,15 @@ class HumanFormatter(logging.Formatter):
         else:
             level = f"{record.levelname:<8}"
 
+        source_location = (
+            f"{record.name} {_source_path(record.pathname, self.source_path_base)}"
+            f"->{record.funcName}():{record.lineno}"
+        )
         parts = [
             _iso(record.created),
             level,
             f"pid:{record.process} {record.threadName}",
-            f"{record.name}:{record.lineno}",
+            source_location,
         ]
         if request_id:
             parts.append(f"req={request_id}")

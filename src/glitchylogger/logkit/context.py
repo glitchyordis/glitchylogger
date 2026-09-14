@@ -5,9 +5,15 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import Any, Iterator
 
-request_id_var: ContextVar[str | None] = ContextVar("mpmt_request_id", default=None)
-correlation_id_var: ContextVar[str | None] = ContextVar("mpmt_correlation_id", default=None)
-extra_context_var: ContextVar[dict[str, Any]] = ContextVar("mpmt_extra_context", default={})
+request_id_var: ContextVar[str | None] = ContextVar(
+    "glitchylogger_request_id", default=None
+)
+correlation_id_var: ContextVar[str | None] = ContextVar(
+    "glitchylogger_correlation_id", default=None
+)
+extra_context_var: ContextVar[dict[str, Any]] = ContextVar(
+    "glitchylogger_extra_context", default={}
+)
 
 
 def set_request_id(value: str | None) -> None:

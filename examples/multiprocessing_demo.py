@@ -25,6 +25,7 @@ from glitchylogger import (  # noqa: E402
 )
 
 LOG_DIR = Path(__file__).resolve().parent / "demo-logs"
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 def worker(tag: str, count: int) -> str:
@@ -49,6 +50,7 @@ def main() -> None:
     from datetime import datetime
     configure_logging(
         LoggerConfig(
+            source_path_base=PROJECT_ROOT,
             file_path=LOG_DIR / f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.log", level="DEBUG", allowed_root=LOG_DIR
         )
     )

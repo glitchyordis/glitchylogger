@@ -9,8 +9,9 @@ Switch the log target at runtime::
 
 Multiple OS workers (``--workers N``): each worker process is started by uvicorn
 itself, so no parent process owns a shared queue. Either give each worker its own
-file (``MPMT_LOG_FILE=logs/worker-$PID.log``) or run a single worker and scale with
-threads/async. The queue transport here covers processes you spawn yourself.
+file (``GLITCHYLOGGER_LOG_FILE=logs/worker-$PID.log``) or run a single worker and
+scale with threads/async. The queue transport here covers processes you spawn
+yourself.
 """
 
 from __future__ import annotations

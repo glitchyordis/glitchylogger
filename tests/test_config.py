@@ -15,6 +15,12 @@ def test_levels_are_normalised(tmp_path: Path):
     assert config.console_level == logging.WARNING
 
 
+def test_source_path_base_is_resolved(tmp_path: Path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    config = LoggerConfig(file_path="app.log", source_path_base="src")
+    assert config.source_path_base == (tmp_path / "src").resolve()
+
+
 def test_unknown_level_rejected(tmp_path: Path):
     with pytest.raises(ValueError):
         LoggerConfig(file_path=tmp_path / "a.log", level="LOUD")
@@ -73,10 +79,25 @@ def test_config_rejects_file_outside_allowed_root(tmp_path: Path):
 
 
 def test_from_env(monkeypatch, tmp_path: Path):
-    monkeypatch.setenv("MPMT_LOG_FILE", str(tmp_path / "env.log"))
-    monkeypatch.setenv("MPMT_LOG_LEVEL", "WARNING")
-    monkeypatch.setenv("MPMT_LOG_CONSOLE", "0")
+    monkeypatch.setenv("GLITCHYLOGGER_LOG_FILE", str(tmp_path / "env.log"))
+    monkeypatch.setenv("GLITCHYLOGGER_LOG_LEVEL", "WARNING")
+    monkeypatch.setenv("GLITCHYLOGGER_LOG_CONSOLE", "0")
+    monkeypatch.setenv("GLITCHYLOGGER_LOG_OVERFLOW", "block")
+    monkeypatch.setenv("GLITCHYLOGGER_LOG_QUEUE_SIZE", "123")
+    monkeypatch.setenv("GLITCHYLOGGER_LOG_ALLOWED_ROOT", str(tmp_path))
+    monkeypatch.setenv("GLITCHYLOGGER_LOG_SOURCE_PATH_BASE", str(tmp_path))
     config = LoggerConfig.from_env()
     assert config.file_path == (tmp_path / "env.log").resolve()
     assert config.level == logging.WARNING
     assert config.console is False
+    assert config.overflow == "block"
+    assert config.queue_size == 123
+    assert config.allowed_root == tmp_path.resolve()
+    assert config.source_path_base == tmp_path.resolve()
+
+
+def test_from_env_ignores_legacy_prefix(monkeypatch, tmp_path: Path):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("MPMT_LOG_FILE", str(tmp_path / "legacy.log"))
+    config = LoggerConfig.from_env()
+    assert config.file_path == (tmp_path / "logs" / "app.log").resolve()

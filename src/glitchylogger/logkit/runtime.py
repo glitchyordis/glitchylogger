@@ -78,13 +78,19 @@ def configure_logging(config: LoggerConfig | None = None, **overrides: Any) -> L
         )
         lock = manager.Lock()
 
-        file_handler = SwitchableFileHandler(config.file_path, level=int(config.file_level))
+        file_handler = SwitchableFileHandler(
+            config.file_path,
+            level=int(config.file_level),
+            source_path_base=config.source_path_base,
+        )
         console_handler: logging.Handler | None = None
         if config.console:
             console_handler = logging.StreamHandler(sys.stderr)
             console_handler.setLevel(int(config.console_level))
             color = supports_color(sys.stderr) if config.color is None else config.color
-            console_handler.setFormatter(HumanFormatter(color=color))
+            console_handler.setFormatter(
+                HumanFormatter(color=color, source_path_base=config.source_path_base)
+            )
 
         listener = LogListener(queue, shared, file_handler, console_handler)
         listener.start()

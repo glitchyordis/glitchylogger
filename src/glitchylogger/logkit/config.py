@@ -59,6 +59,7 @@ class LoggerConfig:
     allowed_root: Path | None = None
     capture_warnings: bool = True
     color: bool | None = None
+    source_path_base: Path | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "level", to_level(self.level))
@@ -67,6 +68,12 @@ class LoggerConfig:
         root = None if self.allowed_root is None else Path(self.allowed_root).expanduser().resolve()
         object.__setattr__(self, "allowed_root", root)
         object.__setattr__(self, "file_path", confine(Path(self.file_path), root))
+        source_path_base = (
+            None
+            if self.source_path_base is None
+            else Path(self.source_path_base).expanduser().resolve()
+        )
+        object.__setattr__(self, "source_path_base", source_path_base)
         if self.queue_size <= 0:
             raise ValueError("queue_size must be positive")
         if self.overflow not in ("discard", "block", "drop"):
@@ -78,14 +85,19 @@ class LoggerConfig:
     def from_env(cls, **overrides: object) -> LoggerConfig:
         env = os.environ
         kwargs: dict[str, object] = {
-            "file_path": env.get("MPMT_LOG_FILE", "logs/app.log"),
-            "level": env.get("MPMT_LOG_LEVEL", "INFO"),
-            "console": env.get("MPMT_LOG_CONSOLE", "1") not in ("0", "false", "False"),
-            "overflow": env.get("MPMT_LOG_OVERFLOW", "discard"),
+            "file_path": env.get("GLITCHYLOGGER_LOG_FILE", "logs/app.log"),
+            "level": env.get("GLITCHYLOGGER_LOG_LEVEL", "INFO"),
+            "console": env.get("GLITCHYLOGGER_LOG_CONSOLE", "1")
+            not in ("0", "false", "False"),
+            "overflow": env.get("GLITCHYLOGGER_LOG_OVERFLOW", "discard"),
         }
-        if "MPMT_LOG_QUEUE_SIZE" in env:
-            kwargs["queue_size"] = int(env["MPMT_LOG_QUEUE_SIZE"])
-        if "MPMT_LOG_ALLOWED_ROOT" in env:
-            kwargs["allowed_root"] = Path(env["MPMT_LOG_ALLOWED_ROOT"])
+        if "GLITCHYLOGGER_LOG_QUEUE_SIZE" in env:
+            kwargs["queue_size"] = int(env["GLITCHYLOGGER_LOG_QUEUE_SIZE"])
+        if "GLITCHYLOGGER_LOG_ALLOWED_ROOT" in env:
+            kwargs["allowed_root"] = Path(env["GLITCHYLOGGER_LOG_ALLOWED_ROOT"])
+        if "GLITCHYLOGGER_LOG_SOURCE_PATH_BASE" in env:
+            kwargs["source_path_base"] = Path(
+                env["GLITCHYLOGGER_LOG_SOURCE_PATH_BASE"]
+            )
         kwargs.update(overrides)
         return cls(**kwargs)  # type: ignore[arg-type]

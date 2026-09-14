@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Added
+
+- Logs path relative to `source_path_base`.
+
+### Changed
+
+- Logging environment variables now use the `GLITCHYLOGGER_LOG_*` prefix to
+  match the package name.
+
 ## [0.2.0] - 2026-09-06
 
 ### Added

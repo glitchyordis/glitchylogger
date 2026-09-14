@@ -62,6 +62,18 @@ finally:
 Applications configure and shut down logging. Library modules should only call
 `get_logger(__name__)`.
 
+To shorten source paths in JSON and console output, select the application root:
+
+```python
+configure_logging(
+	LoggerConfig(file_path="logs/app.jsonl", source_path_base=".")
+)
+```
+
+Files below that directory are shown relative to it. Files outside it retain
+their absolute path. The same option can be set with
+`GLITCHYLOGGER_LOG_SOURCE_PATH_BASE`.
+
 ## Child processes
 
 Pass the logging handle to processes created by your application:

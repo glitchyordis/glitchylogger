@@ -266,7 +266,9 @@ function render() {
     detail.className = "record-detail";
     const recordJson = document.createElement("pre");
     recordJson.className = "record-detail-json";
-    recordJson.textContent = JSON.stringify(record, null, 2);
+    const recordWithoutMessage = { ...record };
+    delete recordWithoutMessage.msg;
+    recordJson.textContent = JSON.stringify(recordWithoutMessage, null, 2);
     const renderedMessage = document.createElement("pre");
     renderedMessage.className = "record-detail-message";
     renderedMessage.textContent = String(record.msg ?? "");

@@ -30,6 +30,13 @@ def _iso(created: float) -> str:
         timespec="milliseconds"
     )
 
+def _local_iso(created: float) -> str:
+    return (
+        _dt.datetime.fromtimestamp(created, tz=_dt.UTC)
+        .astimezone()
+        .replace(tzinfo=None) # remove this to get utc offset
+        .isoformat(timespec="milliseconds")
+    )
 
 def _extras(record: logging.LogRecord) -> dict[str, Any]:
     """
@@ -125,21 +132,30 @@ class HumanFormatter(logging.Formatter):
             level = f"{record.levelname:<8}"
 
         source_location = (
-            f"{record.name} {_source_path(record.pathname, self.source_path_base)}"
+            # f"{record.name} {_source_path(record.pathname, self.source_path_base)}"
+            f"{record.name} {record.filename}"
             f"->{record.funcName}():{record.lineno}"
         )
         parts = [
-            _iso(record.created),
+            _local_iso(record.created),
+            # _iso(record.created),
             level,
-            f"pid:{record.process} {record.threadName}",
+            # f"pid:{record.process} {record.threadName}",
             source_location,
         ]
         if request_id:
             parts.append(f"req={request_id}")
-        line = " | ".join(parts) + " | " + record.getMessage()
+        line = " | ".join(parts)
 
-        if extras:
-            line += " | " + " ".join(f"{k}={v}" for k, v in extras.items())
+        # if extras:
+        #     line += " | " + " ".join(f"{k}={v}" for k, v in extras.items())
+        
+        msg = record.getMessage()
+        if len(msg) >= 20:
+            line += "\n" + msg
+        else:
+            line += " | " + msg
+            
         if record.exc_info:
             line += "\n" + self.formatException(record.exc_info)
         elif record.exc_text:

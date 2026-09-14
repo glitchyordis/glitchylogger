@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Remove github ci action trigger on push.
+- HumanFormatter format to be more compact.
+- Hide "msg" from viewer's `class="record-detail-json"`  as it is already rendered in `class="record-detail-message"` element.
+
 ## [0.4.1] - 2026-09-14 22:53:24
 
 ### Added

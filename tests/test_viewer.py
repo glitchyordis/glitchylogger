@@ -208,6 +208,9 @@ def test_viewer_page_and_assets_are_served(tmp_path: Path):
     assert "Authorization" in script.text
     assert 'renderedMessage.className = "record-detail-message"' in script.text
     assert 'renderedMessage.textContent = String(record.msg ?? "")' in script.text
+    assert "delete recordWithoutMessage.msg" in script.text
+    assert 'createCopyButton("Message", String(record.msg || ""), "message")' in script.text
+    assert 'createCopyButton("JSONL", JSON.stringify(record), "json")' in script.text
     assert 'module: { label: "Module"' in script.text
     assert 'func: { label: "Function"' in script.text
 

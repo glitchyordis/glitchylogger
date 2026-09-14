@@ -251,6 +251,8 @@ The response reports how many previously connected sessions were signaled:
   including messages, request IDs, correlation IDs, and custom fields.
 - **DEBUG**, **INFO**, **WARNING**, **ERROR**, **CRITICAL**, and **PARSE** toggle
   individual severity levels.
+- **Columns** optionally adds the JSONL `module` and `func` fields to each row.
+  Selections are saved in the browser and restored on later visits.
 
 Anyone with the viewer token can browse and switch to any directory readable
 by the viewer process, then inspect its `.log` and `.jsonl` files. Treat the
@@ -299,9 +301,29 @@ modify the source file.
 --host ADDRESS     Bind address; default: 127.0.0.1
 --port PORT        HTTP port; default: 8765
 --tail COUNT       Initial number of complete records; default: 1000
+--columns [COLUMN ...]  Optional columns initially shown: module func
 --token TOKEN      Access token
 --admin-token TOKEN  Separate admin dashboard token
 ```
+
+For example, show both optional columns by default:
+
+```powershell
+glitchylogger-viewer `
+  --directory "C:\ProgramData\MyApp\logs" `
+  --columns module func
+```
+
+Valid column names are `module` and `func`. An invalid name stops startup and
+prints the valid choices. The comma-separated environment equivalent is:
+
+```powershell
+$env:GLITCHYLOGGER_VIEWER_COLUMNS = "module,func"
+```
+
+These settings establish the initial selection only. Once a user changes the
+**Columns** menu, that browser's saved preference takes precedence. Clear the
+site's stored data to use the server default again.
 
 Prefer the system credential store described above. Environment variables
 override stored credentials; command-line values override both but may be
@@ -397,6 +419,12 @@ searched.
 Confirm the application is appending complete newline-terminated JSON objects.
 In directory mode, select **Latest file (auto)** or choose the current file. Use
 the health endpoint to confirm which file the server considers active.
+
+### Updated controls are missing styles
+
+Restart the viewer after updating GlitchyLogger, then reload the page. Viewer
+pages and versioned assets are configured for cache revalidation so current
+HTML, CSS, and JavaScript load together.
 
 ### The page still shows an older interface
 

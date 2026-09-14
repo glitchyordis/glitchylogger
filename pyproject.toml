@@ -75,7 +75,7 @@ replace = 'version = "{new_version}"'
 [[tool.bumpversion.files]]
 glob = "CHANGELOG.md"
 search = "## [Unreleased]"
-replace = "## [Unreleased]\n\n## [{new_version}] - {now:%Y-%m-%d}"
+replace = "## [Unreleased]\n\n## [{new_version}] - {now:%Y-%m-%d %H:%M:%S}"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

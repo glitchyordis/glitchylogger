@@ -22,6 +22,21 @@ _LOG_SUFFIXES = {".jsonl", ".log"}
 _CREDENTIAL_SERVICE = "glitchylogger"
 _VIEWER_CREDENTIAL = "viewer-token"
 _ADMIN_CREDENTIAL = "admin-token"
+_VIEWER_COLUMNS = ("module", "func")
+
+
+def _validate_viewer_columns(columns: list[str] | tuple[str, ...] | None) -> tuple[str, ...]:
+    selected = (
+        ()
+        if columns is None
+        else tuple(dict.fromkeys(column.strip() for column in columns if column.strip()))
+    )
+    invalid = [column for column in selected if column not in _VIEWER_COLUMNS]
+    if invalid:
+        names = ", ".join(invalid)
+        valid = ", ".join(_VIEWER_COLUMNS)
+        raise ValueError(f"unknown viewer column(s): {names}; choose from: {valid}")
+    return selected
 
 
 def _resolve_secret(
@@ -421,6 +436,7 @@ def create_app(
     tail: int = 1_000,
     directory: str | os.PathLike[str] | None = None,
     admin_token: str | None = None,
+    columns: list[str] | tuple[str, ...] | None = None,
 ):
     try:
         from fastapi import FastAPI, Header, HTTPException, Query
@@ -435,6 +451,7 @@ def create_app(
         raise ValueError("admin token must differ from viewer token")
     if tail <= 0:
         raise ValueError("tail must be positive")
+    initial_columns = _validate_viewer_columns(columns)
 
     catalog = LogSourceCatalog(
         fixed_file=None if log_file is None else Path(log_file),
@@ -445,6 +462,15 @@ def create_app(
     session_registry = ViewerSessionRegistry()
     app.state.viewer_sessions = session_registry
     app.mount("/assets", StaticFiles(directory=str(assets)), name="assets")
+
+    @app.middleware("http")
+    async def prevent_stale_viewer_assets(request, call_next):
+        response = await call_next(request)
+        if request.url.path in ("/", "/admin") or request.url.path.startswith(
+            "/assets/"
+        ):
+            response.headers["Cache-Control"] = "no-cache"
+        return response
 
     def authorize(authorization: str | None) -> None:
         supplied = ""
@@ -482,6 +508,13 @@ def create_app(
             "file": None if path is None else str(path),
             "exists": path is not None and path.is_file(),
         }
+
+    @app.get("/api/viewer/config")
+    async def viewer_config(
+        authorization: str | None = Header(default=None),
+    ) -> dict[str, Any]:
+        authorize(authorization)
+        return {"columns": list(initial_columns)}
 
     @app.get("/api/logs/files")
     async def log_files(
@@ -654,6 +687,12 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--host", default="127.0.0.1", help="bind address")
     parser.add_argument("--port", default=8765, type=int, help="bind port")
     parser.add_argument("--tail", default=1_000, type=int, help="initial record count")
+    parser.add_argument(
+        "--columns",
+        nargs="*",
+        metavar="COLUMN",
+        help="optional columns shown initially: module func",
+    )
     parser.add_argument("--token", help="viewer token (prefer environment or credential store)")
     parser.add_argument(
         "--admin-token",
@@ -665,6 +704,16 @@ def _parser() -> argparse.ArgumentParser:
 def main() -> None:
     parser = _parser()
     args = parser.parse_args()
+    environment_columns = os.environ.get("GLITCHYLOGGER_VIEWER_COLUMNS")
+    requested_columns = (
+        args.columns
+        if args.columns is not None
+        else environment_columns.split(",") if environment_columns else None
+    )
+    try:
+        columns = _validate_viewer_columns(requested_columns)
+    except ValueError as exc:
+        parser.error(str(exc))
     try:
         viewer_token = _resolve_secret(
             args.token,
@@ -697,6 +746,7 @@ def main() -> None:
             args.tail,
             directory=args.directory,
             admin_token=admin_token,
+            columns=columns,
         ),
         host=args.host,
         port=args.port,

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>GlitchyLogger Viewer</title>
-  <link rel="stylesheet" href="/assets/viewer.css">
+  <link rel="stylesheet" href="/assets/viewer.css?v=2">
 </head>
 <body>
   <header class="topbar">
@@ -51,6 +51,13 @@
           <input id="searchInput" type="search" placeholder="Search messages, IDs, and fields" autocomplete="off">
         </label>
         <div id="levelFilters" class="level-filters" aria-label="Filter by level"></div>
+        <details id="columnPicker" class="column-picker">
+          <summary>Columns</summary>
+          <div class="column-menu" aria-label="Optional log columns">
+            <label><input type="checkbox" value="module">Module</label>
+            <label><input type="checkbox" value="func">Function</label>
+          </div>
+        </details>
         <div class="control-actions">
           <button id="pauseButton" class="command-button" type="button">Pause</button>
           <label class="toggle"><input id="autoScroll" type="checkbox" checked><span>Follow</span></label>
@@ -60,7 +67,7 @@
     </section>
 
     <section class="log-panel" aria-label="Live logs">
-      <div class="log-head" aria-hidden="true">
+      <div id="logHead" class="log-head" aria-hidden="true">
         <span>Index</span><span>Time</span><span>Level</span><span>Logger</span><span>Message</span>
       </div>
       <div id="logRows" class="log-rows" role="log" aria-live="off"></div>
@@ -99,6 +106,6 @@
     </form>
   </dialog>
 
-  <script src="/assets/viewer.js" defer></script>
+  <script src="/assets/viewer.js?v=2" defer></script>
 </body>
 </html>

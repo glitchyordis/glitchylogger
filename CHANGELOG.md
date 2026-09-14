@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Added
+
+- Viewer column preferences for optionally displaying JSONL `module` and `func`
+  fields, persisted in the browser and configurable as startup defaults.
+
+### Fixed
+
+- Viewer pages now revalidate versioned assets, preventing updated HTML from
+  loading with stale CSS or JavaScript after an upgrade.
+
 ## [0.3.0] - 2026-09-14
 
 ### Added

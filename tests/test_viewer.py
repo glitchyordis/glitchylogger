@@ -14,6 +14,7 @@ from glitchylogger.viewer import (
     _store_credentials,
     _stream_events,
     _tail_records,
+    _validate_viewer_columns,
     store_credentials,
     tail_records,
 )
@@ -190,11 +191,49 @@ def test_viewer_page_and_assets_are_served(tmp_path: Path):
 
     assert page.status_code == 200
     assert "GlitchyLogger Viewer" in page.text
+    assert 'href="/assets/viewer.css?v=2"' in page.text
+    assert 'src="/assets/viewer.js?v=2"' in page.text
     assert '<span id="connectionDot"' in page.text
     assert '<span id="connectionText" class="connection-status"' in page.text
     assert '<span class="status-label">Live</span>' not in page.text
+    assert 'id="columnPicker"' in page.text
+    assert 'value="module"' in page.text
+    assert 'value="func"' in page.text
     assert script.status_code == 200
+    assert script.headers["cache-control"] == "no-cache"
     assert "Authorization" in script.text
+    assert 'module: { label: "Module"' in script.text
+    assert 'func: { label: "Function"' in script.text
+
+
+def test_viewer_config_returns_initial_columns(tmp_path: Path):
+    pytest.importorskip("fastapi")
+    pytest.importorskip("httpx")
+    from fastapi.testclient import TestClient
+
+    from glitchylogger.viewer import create_app
+
+    app = create_app(tmp_path / "app.jsonl", "secret", columns=["module", "func"])
+    with TestClient(app) as client:
+        response = client.get(
+            "/api/viewer/config",
+            headers={"Authorization": "Bearer secret"},
+        )
+
+    assert response.status_code == 200
+    assert response.json() == {"columns": ["module", "func"]}
+
+
+def test_invalid_viewer_column_has_actionable_message():
+    with pytest.raises(ValueError, match=r"unknown viewer column\(s\): path; choose from: module, func"):
+        _validate_viewer_columns(["path"])
+
+
+def test_viewer_columns_are_trimmed_and_deduplicated():
+    assert _validate_viewer_columns(["module", " func", "module"]) == (
+        "module",
+        "func",
+    )
 
 
 def test_health_endpoint_requires_bearer_token(tmp_path: Path):

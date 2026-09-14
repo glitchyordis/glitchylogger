@@ -24,7 +24,7 @@ live JSONL updates, filtering, source selection, and an admin session dashboard.
 Install a tagged release directly from GitHub:
 
 ```bash
-python -m pip install "glitchylogger @ git+https://github.com/glitchyordis/glitchylogger.git@v0.1.0"
+python -m pip install "glitchylogger @ git+https://github.com/glitchyordis/glitchylogger.git@main"
 ```
 
 In another project's `pyproject.toml`, pin the same tag for reproducible builds:
@@ -32,7 +32,7 @@ In another project's `pyproject.toml`, pin the same tag for reproducible builds:
 ```toml
 [project]
 dependencies = [
-	"glitchylogger @ git+https://github.com/glitchyordis/glitchylogger.git@v0.1.0",
+	"glitchylogger @ git+https://github.com/glitchyordis/glitchylogger.git@main",
 ]
 ```
 
@@ -73,6 +73,22 @@ configure_logging(
 Files below that directory are shown relative to it. Files outside it retain
 their absolute path. The same option can be set with
 `GLITCHYLOGGER_LOG_SOURCE_PATH_BASE`.
+
+Call `configure_logging()` without arguments to load these environment variables:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `GLITCHYLOGGER_LOG_FILE` | `logs/app.log` | Output file |
+| `GLITCHYLOGGER_LOG_LEVEL` | `INFO` | Root logger level |
+| `GLITCHYLOGGER_LOG_CONSOLE` | `1` | Set to `0` or `false` to disable console output |
+| `GLITCHYLOGGER_LOG_OVERFLOW` | `discard` | Queue overflow policy |
+| `GLITCHYLOGGER_LOG_QUEUE_SIZE` | `10000` | Maximum queued records |
+| `GLITCHYLOGGER_LOG_ALLOWED_ROOT` | unset | Restrict log targets to this directory |
+| `GLITCHYLOGGER_LOG_SOURCE_PATH_BASE` | unset | Make source pathnames relative to this directory |
+
+JSONL records include `module`, `pathname`, `func`, and `line` source fields.
+Without `source_path_base`, `pathname` remains the original path supplied by
+Python's logging record.
 
 ## Child processes
 
@@ -131,6 +147,17 @@ reachable from other computers on the LAN:
 ```powershell
 glitchylogger-viewer --directory C:\ProgramData\MyApp\logs --host 0.0.0.0
 ```
+
+Show optional source columns when a browser has no saved column preference:
+
+```powershell
+glitchylogger-viewer --directory C:\ProgramData\MyApp\logs --columns module func
+```
+
+Valid optional columns are `module` and `func`. Invalid names stop startup with
+a message listing the valid choices. Set the same default with the comma-separated
+`GLITCHYLOGGER_VIEWER_COLUMNS` environment variable. A selection made in the
+browser is saved locally and takes precedence over the startup default.
 
 Environment variables override stored credentials, and explicit token options
 override both. On the other computer, open `http://LOGGER-PC:8765` and enter

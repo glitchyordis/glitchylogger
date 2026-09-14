@@ -2,6 +2,24 @@ const MAX_RECORDS = 1000;
 const MAX_RENDERED = 250;
 const RENDER_BATCH = 250;
 const LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL", "PARSE_ERROR"];
+const OPTIONAL_COLUMNS = {
+  module: { label: "Module", width: "minmax(100px, 150px)" },
+  func: { label: "Function", width: "minmax(120px, 180px)" },
+};
+const COLUMN_STORAGE_KEY = "glitchylogger-viewer-columns";
+
+function loadVisibleColumns() {
+  const stored = localStorage.getItem(COLUMN_STORAGE_KEY);
+  if (stored === null) return null;
+  try {
+    const saved = JSON.parse(stored);
+    return new Set(saved.filter((key) => Object.hasOwn(OPTIONAL_COLUMNS, key)));
+  } catch {
+    localStorage.removeItem(COLUMN_STORAGE_KEY);
+    return null;
+  }
+}
+
 const state = {
   records: [],
   enabledLevels: new Set(LEVELS),
@@ -33,6 +51,8 @@ const state = {
   sessionId: null,
   lastActivityReport: 0,
   disconnectedByAdmin: false,
+  visibleColumns: loadVisibleColumns() || new Set(),
+  hasSavedColumns: localStorage.getItem(COLUMN_STORAGE_KEY) !== null,
 };
 
 const elements = {
@@ -53,6 +73,9 @@ const elements = {
   logger: document.querySelector("#loggerFilter"),
   loggerSuggestions: document.querySelector("#loggerSuggestions"),
   levels: document.querySelector("#levelFilters"),
+  logPanel: document.querySelector(".log-panel"),
+  logHead: document.querySelector("#logHead"),
+  columnPicker: document.querySelector("#columnPicker"),
   pause: document.querySelector("#pauseButton"),
   autoScroll: document.querySelector("#autoScroll"),
   clear: document.querySelector("#clearButton"),
@@ -101,6 +124,32 @@ function createText(className, text) {
   span.className = className;
   span.textContent = text;
   return span;
+}
+
+function selectedOptionalColumns() {
+  return Object.entries(OPTIONAL_COLUMNS)
+    .filter(([key]) => state.visibleColumns.has(key));
+}
+
+function applyColumnLayout(shouldRender = true) {
+  const optionalColumns = selectedOptionalColumns();
+  const template = [
+    "54px",
+    "185px",
+    "82px",
+    "minmax(130px, 190px)",
+    ...optionalColumns.map(([, column]) => column.width),
+    "minmax(300px, 1fr)",
+  ].join(" ");
+  elements.logPanel.style.setProperty("--log-columns", template);
+  elements.logHead.replaceChildren(
+    ...["Index", "Time", "Level", "Logger", ...optionalColumns.map(([, column]) => column.label), "Message"]
+      .map((label) => createText("", label)),
+  );
+  for (const input of elements.columnPicker.querySelectorAll("input[type=checkbox]")) {
+    input.checked = state.visibleColumns.has(input.value);
+  }
+  if (shouldRender) render();
 }
 
 async function copyText(text) {
@@ -197,8 +246,14 @@ function render() {
       timestamp,
       createText(`level level-${level.toLowerCase()}`, level),
       createText("logger", String(record.logger || "-")),
-      createText("message", String(record.msg || "")),
     );
+    for (const [key] of selectedOptionalColumns()) {
+      const value = String(record[key] || "-");
+      const field = createText(`optional-column ${key}`, value);
+      field.title = value;
+      summary.append(field);
+    }
+    summary.append(createText("message", String(record.msg || "")));
     const actions = document.createElement("span");
     actions.className = "row-actions";
     actions.append(
@@ -444,6 +499,20 @@ async function refreshFiles(token) {
     : "Change log directory";
 }
 
+async function refreshViewerConfig(token) {
+  if (state.hasSavedColumns) return;
+  const response = await fetch("/api/viewer/config", {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  if (!response.ok) return;
+  const payload = await response.json();
+  state.visibleColumns = new Set(
+    payload.columns.filter((key) => Object.hasOwn(OPTIONAL_COLUMNS, key)),
+  );
+  applyColumnLayout();
+}
+
 async function changeDirectory(path) {
   const response = await fetch("/api/logs/directory", {
     method: "PUT",
@@ -584,6 +653,7 @@ async function connect(token) {
     sessionStorage.setItem("glitchylogger-token", token);
     elements.dialog.close();
     refreshFiles(token);
+    await refreshViewerConfig(token);
     setConnection("Live stream connected", true);
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -629,6 +699,17 @@ for (const level of LEVELS) {
   });
   elements.levels.append(button);
 }
+
+elements.columnPicker.addEventListener("change", (event) => {
+  const input = event.target.closest("input[type=checkbox]");
+  if (!input || !Object.hasOwn(OPTIONAL_COLUMNS, input.value)) return;
+  if (input.checked) state.visibleColumns.add(input.value);
+  else state.visibleColumns.delete(input.value);
+  state.hasSavedColumns = true;
+  localStorage.setItem(COLUMN_STORAGE_KEY, JSON.stringify([...state.visibleColumns]));
+  resetRenderWindow();
+  applyColumnLayout();
+});
 
 elements.search.addEventListener("input", () => {
   resetRenderWindow();
@@ -817,6 +898,7 @@ for (const eventName of ["pointerdown", "keydown", "wheel", "touchstart"]) {
   document.addEventListener(eventName, reportActivity, { passive: true });
 }
 
+applyColumnLayout(false);
 const savedToken = sessionStorage.getItem("glitchylogger-token");
 if (savedToken) connect(savedToken);
 else elements.dialog.showModal();

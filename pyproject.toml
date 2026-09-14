@@ -43,6 +43,8 @@ test = [
     "fastapi>=0.110",
     "keyring>=25.0",
     "starlette>=0.36.3",
+    "chromium>=0.0.0",
+    "playwright>=1.62.0",
 ]
 dev = [
     "build>=1.2",

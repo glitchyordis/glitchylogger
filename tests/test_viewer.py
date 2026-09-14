@@ -187,6 +187,7 @@ def test_viewer_page_and_assets_are_served(tmp_path: Path):
 
     with TestClient(create_app(tmp_path / "app.jsonl", "secret")) as client:
         page = client.get("/")
+        stylesheet = client.get("/assets/viewer.css")
         script = client.get("/assets/viewer.js")
 
     assert page.status_code == 200
@@ -199,9 +200,14 @@ def test_viewer_page_and_assets_are_served(tmp_path: Path):
     assert 'id="columnPicker"' in page.text
     assert 'value="module"' in page.text
     assert 'value="func"' in page.text
+    assert stylesheet.status_code == 200
+    assert "grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)" in stylesheet.text
+    assert ".record-detail-message" in stylesheet.text
     assert script.status_code == 200
     assert script.headers["cache-control"] == "no-cache"
     assert "Authorization" in script.text
+    assert 'renderedMessage.className = "record-detail-message"' in script.text
+    assert 'renderedMessage.textContent = String(record.msg ?? "")' in script.text
     assert 'module: { label: "Module"' in script.text
     assert 'func: { label: "Function"' in script.text
 

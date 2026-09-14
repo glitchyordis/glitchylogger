@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Added
+
+- Render "msg" from log on the side in viewer.
+- "test" requirements in pyproject.toml.
+
 ## [0.4.0] - 2026-09-14 22:25:15
 
 ### Added

@@ -262,9 +262,15 @@ function render() {
       createCopyButton("JSONL", JSON.stringify(record), "json"),
     );
     summary.append(actions);
-    const detail = document.createElement("pre");
+    const detail = document.createElement("div");
     detail.className = "record-detail";
-    detail.textContent = JSON.stringify(record, null, 2);
+    const recordJson = document.createElement("pre");
+    recordJson.className = "record-detail-json";
+    recordJson.textContent = JSON.stringify(record, null, 2);
+    const renderedMessage = document.createElement("pre");
+    renderedMessage.className = "record-detail-message";
+    renderedMessage.textContent = String(record.msg ?? "");
+    detail.append(recordJson, renderedMessage);
     details.append(summary, detail);
     fragment.append(details);
   }

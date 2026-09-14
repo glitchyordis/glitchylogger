@@ -275,7 +275,9 @@ button:hover { border-color: #85898e; background: #f2f3f4; }
 .message-icon { height: 11px; margin-top: -2px; border: 1.5px solid currentColor; border-radius: 2px; }
 .message-icon::after { content: ""; position: absolute; width: 4px; height: 4px; bottom: -3px; left: 2px; border-bottom: 1.5px solid currentColor; border-left: 1.5px solid currentColor; transform: skewY(-35deg); background: #fff; }
 .json-icon::before { content: "{}"; position: absolute; inset: -2px; font-family: "Cascadia Mono", Consolas, monospace; font-size: 14px; font-weight: 700; line-height: 16px; }
-.record-detail { margin: 0; padding: 12px 14px 14px 356px; overflow: auto; color: #383c40; white-space: pre-wrap; border-top: 1px dashed #d5d8db; background: #fafafa; line-height: 1.5; }
+.record-detail { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); border-top: 1px dashed #d5d8db; background: #fafafa; }
+.record-detail pre { min-width: 0; margin: 0; padding: 12px 14px 14px; overflow-wrap: anywhere; color: #383c40; white-space: pre-wrap; line-height: 1.5; }
+.record-detail-message { max-height: min(50vh, 480px); overflow: auto; scrollbar-gutter: stable; border-left: 1px solid #d5d8db; background: #fff; }
 .empty-state { position: absolute; inset: 36px 0 0; display: grid; place-items: center; color: var(--muted); pointer-events: none; }
 .empty-state.hidden { display: none; }
 
@@ -309,7 +311,6 @@ dialog .directory-choice:hover { border-color: transparent; background: #eceef0;
   .query-controls { flex-wrap: wrap; }
   .search-field { flex-basis: calc(100% - 10px); }
   .control-actions { margin-left: 0; }
-  .record-detail { padding-left: 12px; }
 }
 
 @media (max-width: 650px) {
@@ -333,6 +334,8 @@ dialog .directory-choice:hover { border-color: transparent; background: #eceef0;
   .timestamp { font-size: 10px; }
   .row-actions { position: static; grid-column: 1 / -1; grid-row: 3; opacity: 1; transform: none; }
   .copy-button { width: 34px; min-height: 30px; }
+  .record-detail { grid-template-columns: 1fr; }
+  .record-detail-message { border-top: 1px solid #d5d8db; border-left: 0; }
 }
 
 @media (hover: none) {

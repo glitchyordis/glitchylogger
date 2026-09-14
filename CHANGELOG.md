@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-09-14 22:53:24
+
 ### Added
 
 - Render "msg" from log on the side in viewer.

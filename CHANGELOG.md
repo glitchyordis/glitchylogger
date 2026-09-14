@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-09-15 07:05:35
+
 ### Changed
 
 - Remove github ci action trigger on push.

@@ -264,10 +264,15 @@ token as an operator credential, not as a read-only sharing link.
   list. Select **Resume** to add the buffered records.
 - **Follow** automatically scrolls to the newest visible row.
 - **Clear** removes records from the browser only. It does not modify the file.
-- Select a row to expand the complete formatted JSON object.
+- Select a row to expand its JSON fields and full message. The `msg` field is
+  omitted from the JSON block because the message is rendered separately.
 - **Index** identifies a record's arrival position in the current source
   session. Filtering may leave gaps, and the index restarts when the source
   changes or resets.
+
+The time column parses each record's `ts` value and displays it in the browser's
+local time zone. This can differ from the UTC value stored in the JSONL file or
+from console output produced in the logging server's local time zone.
 
 The browser retains up to the most recent 1,000 records for searching and
 initially renders the newest 250 matching rows to remain responsive during
@@ -286,7 +291,8 @@ Move the pointer over a row to reveal its compact copy icons. Hover or focus an
 icon to see its label. The controls remain visible on touch devices.
 
 - **Timestamp** copies the record's raw `ts` value exactly as received, which
-  can be searched in the source log file.
+  can be searched in the source log file. It does not copy the localized value
+  shown in the time column.
 - **Message** copies only the `msg` value.
 - **JSONL** copies the complete record as one compact JSON line.
 

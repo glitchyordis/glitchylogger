@@ -62,7 +62,7 @@ finally:
 Applications configure and shut down logging. Library modules should only call
 `get_logger(__name__)`.
 
-To shorten source paths in JSON and console output, select the application root:
+To shorten source paths in JSON output, select the application root:
 
 ```python
 configure_logging(
@@ -88,7 +88,127 @@ Call `configure_logging()` without arguments to load these environment variables
 
 JSONL records include `module`, `pathname`, `func`, and `line` source fields.
 Without `source_path_base`, `pathname` remains the original path supplied by
-Python's logging record.
+Python's logging record. `HumanFormatter` currently displays only
+`record.filename`; `source_path_base` is reserved for possible future console
+path formatting.
+
+`JsonLinesFormatter` stores `ts` as an ISO 8601 UTC timestamp with an explicit
+`+00:00` offset. `HumanFormatter` displays the same instant in the logging
+server's local time without an offset, for compact console output. The browser
+viewer parses the JSON timestamp and displays it in the browser's local time.
+
+### Custom formatters
+
+`LoggerConfig` accepts any `logging.Formatter` instance for file and console
+output. Standard format strings work without subclassing:
+
+```python
+import logging
+
+from glitchylogger import LoggerConfig, configure_logging
+
+configure_logging(
+	LoggerConfig(
+		file_path="logs/app.log",
+		file_formatter=logging.Formatter(
+			"%(asctime)s %(levelname)s %(name)s %(message)s"
+		),
+		console_formatter=logging.Formatter("%(levelname)s | %(message)s"),
+	)
+)
+```
+
+For structured output, subclass the exported defaults and override `format()`:
+
+```python
+import json
+import logging
+
+from glitchylogger import JsonLinesFormatter, LoggerConfig, configure_logging
+
+
+class ApplicationJsonFormatter(JsonLinesFormatter):
+	def format(self, record: logging.LogRecord) -> str:
+		return json.dumps(
+			{
+				"severity": record.levelname,
+				"logger": record.name,
+				"msg": record.getMessage(),
+			},
+			ensure_ascii=False,
+		)
+
+
+configure_logging(
+	LoggerConfig(
+		file_path="logs/app.jsonl",
+		file_formatter=ApplicationJsonFormatter(),
+	)
+)
+```
+
+This formatter replaces the complete JSON object and <mark>is not compatible</mark> with the standard viewer columns because it omits `ts` and renames `level`. Delegate to the parent formatter when built-in fields and behavior should be retained.
+
+To customize both destinations while retaining the built-in JSON path
+shortening plus console color, exception, and viewer behavior, delegate to each parent formatter before adjusting its output:
+
+```python
+import json
+import logging
+from pathlib import Path
+
+from glitchylogger import (
+	HumanFormatter,
+	JsonLinesFormatter,
+	LoggerConfig,
+	configure_logging,
+)
+
+PROJECT_ROOT = Path(__file__).resolve().parent
+
+
+class ApplicationJsonFormatter(JsonLinesFormatter):
+	def format(self, record: logging.LogRecord) -> str:
+		payload = json.loads(super().format(record))
+		payload["application"] = "billing"
+		return json.dumps(payload, ensure_ascii=False, default=str)
+
+
+class ApplicationConsoleFormatter(HumanFormatter):
+	def format(self, record: logging.LogRecord) -> str:
+		return f"[billing] {super().format(record)}"
+
+
+configure_logging(
+	LoggerConfig(
+		file_path="logs/app.jsonl",
+		file_formatter=ApplicationJsonFormatter(
+			source_path_base=PROJECT_ROOT,
+		),
+		console_formatter=ApplicationConsoleFormatter(
+			color=True,
+		),
+	)
+)
+```
+
+The subclasses inherit their constructors. Calling `super().format(record)` on
+the JSON formatter applies `source_path_base`; delegating in either formatter
+keeps its standard fields and features before the custom output is added.
+
+Formatting runs in the listener thread in the owner process, so workers require
+no additional setup. A custom file formatter used with the browser viewer must
+emit exactly one JSON object per line. Keep `ts`, `level`, `logger`, and `msg`
+for the standard viewer columns; additional JSON fields remain available in
+record details.
+
+Providing `file_formatter` or `console_formatter` bypasses creation of that
+built-in formatter, so `LoggerConfig.color` and `LoggerConfig.source_path_base`
+are not injected automatically. Pass `color` directly to a `HumanFormatter`
+subclass and `source_path_base` directly to a `JsonLinesFormatter` subclass, as
+above. A formatter that does not delegate to `super().format(record)` is
+responsible for implementing any desired color, source-path, timestamp,
+exception, and extra-field behavior itself.
 
 ## Child processes
 

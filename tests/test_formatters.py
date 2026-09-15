@@ -5,7 +5,7 @@ import logging
 import os
 from pathlib import Path
 
-from glitchylogger.logkit.formatters import HumanFormatter, JsonLinesFormatter
+from glitchylogger import HumanFormatter, JsonLinesFormatter
 
 
 def make_record(**kwargs) -> logging.LogRecord:
@@ -86,26 +86,61 @@ def test_json_is_single_line():
     assert "\n" not in JsonLinesFormatter().format(record)
 
 
+def test_custom_json_formatter_preserves_builtin_fields_and_source_path(tmp_path):
+    class CustomJsonFormatter(JsonLinesFormatter):
+        def format(self, record: logging.LogRecord) -> str:
+            payload = json.loads(super().format(record))
+            payload["application"] = "billing"
+            return json.dumps(payload)
+
+    pathname = tmp_path / "src" / "service.py"
+    payload = json.loads(
+        CustomJsonFormatter(source_path_base=tmp_path).format(
+            make_record(pathname=str(pathname))
+        )
+    )
+
+    assert payload["application"] == "billing"
+    assert payload["pathname"] == str(Path("src") / "service.py")
+    assert all(key in payload for key in ("ts", "level", "logger", "msg"))
+
+
 def test_human_formatter_plain():
     record = make_record()
     line = HumanFormatter(color=False).format(record)
     assert "INFO" in line
     assert "hello world" in line
-    assert record.pathname in line
+    assert record.filename in line
     assert f"->{record.funcName}():42" in line
     assert "\033[" not in line
 
 
-def test_human_formatter_shortens_pathname_relative_to_selected_base(tmp_path):
+def test_human_formatter_uses_filename_when_source_path_base_is_set(tmp_path):
     pathname = tmp_path / "src" / "package" / "service.py"
     record = make_record(pathname=str(pathname))
     line = HumanFormatter(color=False, source_path_base=tmp_path).format(record)
-    assert f"src{os.sep}package{os.sep}service.py->{record.funcName}():42" in line
+    assert f"service.py->{record.funcName}():42" in line
     assert str(tmp_path) not in line
 
 
 def test_human_formatter_colored():
     assert "\033[" in HumanFormatter(color=True).format(make_record())
+
+
+def test_custom_human_formatter_preserves_builtin_color_and_filename(tmp_path):
+    class CustomHumanFormatter(HumanFormatter):
+        def format(self, record: logging.LogRecord) -> str:
+            return f"[billing] {super().format(record)}"
+
+    pathname = tmp_path / "src" / "service.py"
+    line = CustomHumanFormatter(color=True, source_path_base=tmp_path).format(
+        make_record(pathname=str(pathname))
+    )
+
+    assert line.startswith("[billing] ")
+    assert "service.py" in line
+    assert f"src{os.sep}service.py" not in line
+    assert "\033[" in line
 
 
 def test_human_formatter_shows_request_id():

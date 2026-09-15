@@ -25,6 +25,7 @@ Switching the target from anywhere (API handler, worker, thread)::
 from .logkit.config import LoggerConfig
 from .logkit.context import bind_context, get_request_id, set_request_id
 from .logkit.control import LoggingHandle
+from .logkit.formatters import HumanFormatter, JsonLinesFormatter
 from .logkit.runtime import (
     configure_logging,
     configure_worker,
@@ -42,6 +43,8 @@ from .logkit.runtime import (
 __all__ = [
     "LoggerConfig",
     "LoggingHandle",
+    "HumanFormatter",
+    "JsonLinesFormatter",
     "bind_context",
     "configure_logging",
     "configure_worker",

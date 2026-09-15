@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Custom file and console formatter injection through `LoggerConfig`, with the built-in formatters exported for subclassing.
+
 ## [0.4.2] - 2026-09-15 07:05:35
 
 ### Changed

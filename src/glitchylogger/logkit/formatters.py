@@ -132,7 +132,8 @@ class HumanFormatter(logging.Formatter):
             level = f"{record.levelname:<8}"
 
         source_location = (
-            # f"{record.name} {_source_path(record.pathname, self.source_path_base)}"
+            # Use _source_path(record.pathname, self.source_path_base) here if
+            # relative console paths are enabled in the future.
             f"{record.name} {record.filename}"
             f"->{record.funcName}():{record.lineno}"
         )

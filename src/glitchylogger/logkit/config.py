@@ -60,6 +60,8 @@ class LoggerConfig:
     capture_warnings: bool = True
     color: bool | None = None
     source_path_base: Path | None = None
+    file_formatter: logging.Formatter | None = None
+    console_formatter: logging.Formatter | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "level", to_level(self.level))
@@ -74,6 +76,10 @@ class LoggerConfig:
             else Path(self.source_path_base).expanduser().resolve()
         )
         object.__setattr__(self, "source_path_base", source_path_base)
+        for name in ("file_formatter", "console_formatter"):
+            formatter = getattr(self, name)
+            if formatter is not None and not isinstance(formatter, logging.Formatter):
+                raise TypeError(f"{name} must be a logging.Formatter")
         if self.queue_size <= 0:
             raise ValueError("queue_size must be positive")
         if self.overflow not in ("discard", "block", "drop"):

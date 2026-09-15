@@ -1,6 +1,8 @@
 """Process-safe, thread-safe logging with hot-swappable file targets."""
 
 from .logger import (
+	HumanFormatter,
+	JsonLinesFormatter,
 	LoggerConfig,
 	LoggingHandle,
 	bind_context,
@@ -22,6 +24,8 @@ from .logger import (
 __all__ = [
 	"LoggerConfig",
 	"LoggingHandle",
+	"HumanFormatter",
+	"JsonLinesFormatter",
 	"bind_context",
 	"configure_logging",
 	"configure_worker",

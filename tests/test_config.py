@@ -36,6 +36,11 @@ def test_unknown_overflow_rejected(tmp_path: Path):
         LoggerConfig(file_path=tmp_path / "a.log", overflow="panic")
 
 
+def test_formatter_must_be_logging_formatter(tmp_path: Path):
+    with pytest.raises(TypeError, match="file_formatter must be a logging.Formatter"):
+        LoggerConfig(file_path=tmp_path / "a.log", file_formatter=object())  # type: ignore[arg-type]
+
+
 def test_confine_allows_paths_inside_root(tmp_path: Path):
     assert confine(tmp_path / "sub" / "a.log", tmp_path) == (tmp_path / "sub" / "a.log").resolve()
 

@@ -39,9 +39,14 @@ class SwitchableFileHandler(logging.Handler):
         mode: str = "a",
         level: int = logging.NOTSET,
         source_path_base: Path | None = None,
+        formatter: logging.Formatter | None = None,
     ) -> None:
         super().__init__(level)
-        self.setFormatter(JsonLinesFormatter(source_path_base=source_path_base))
+        self.setFormatter(
+            formatter
+            if formatter is not None
+            else JsonLinesFormatter(source_path_base=source_path_base)
+        )
         self._swap_lock = threading.RLock()
         self._path = Path(path)
         self._stream = self._open(self._path, mode)

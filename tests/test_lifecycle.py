@@ -88,6 +88,24 @@ def test_modules_can_get_loggers_before_configuration(log_file: Path):
     assert messages(log_file) == ["late binding works"]
 
 
+def test_custom_file_and_console_formatters_are_used(log_file: Path, capsys):
+    configure_logging(
+        LoggerConfig(
+            file_path=log_file,
+            file_formatter=logging.Formatter("FILE|%(levelname)s|%(message)s"),
+            console_formatter=logging.Formatter("CONSOLE|%(levelname)s|%(message)s"),
+            capture_warnings=False,
+        )
+    )
+    get_logger("custom").warning("custom output")
+
+    assert flush_logs(timeout=10)
+    shutdown_logging(timeout=10)
+
+    assert "FILE|WARNING|custom output" in log_file.read_text(encoding="utf-8").splitlines()
+    assert "CONSOLE|WARNING|custom output" in capsys.readouterr().err
+
+
 def test_warnings_are_captured(log_file: Path):
     import warnings
 

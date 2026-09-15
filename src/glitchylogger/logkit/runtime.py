@@ -82,6 +82,7 @@ def configure_logging(config: LoggerConfig | None = None, **overrides: Any) -> L
             config.file_path,
             level=int(config.file_level),
             source_path_base=config.source_path_base,
+            formatter=config.file_formatter,
         )
         console_handler: logging.Handler | None = None
         if config.console:
@@ -89,7 +90,9 @@ def configure_logging(config: LoggerConfig | None = None, **overrides: Any) -> L
             console_handler.setLevel(int(config.console_level))
             color = supports_color(sys.stderr) if config.color is None else config.color
             console_handler.setFormatter(
-                HumanFormatter(color=color, source_path_base=config.source_path_base)
+                config.console_formatter
+                if config.console_formatter is not None
+                else HumanFormatter(color=color, source_path_base=config.source_path_base)
             )
 
         listener = LogListener(queue, shared, file_handler, console_handler)
